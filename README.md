@@ -1,2 +1,2 @@
-# forensic-tester-application
-Project from 2021 that analyzed forensic testing data by excel database import in order to determine which test cases were incorrectly cross matched. Sold to m DataUnlimitedInternational for internal use. Allowed to publish the project publicly as new version has now been deploydd
+# forensic-tester-application learning
+All of this code was the progression of me learning R and further developing my skills in statistical analysis. These projects aided me in developing the demo of the final application sold to DataUnlimitedInternational 
