@@ -2,32 +2,49 @@ library(shiny)
 library(readxl)
 library(rhandsontable)
 library(jsonlite)
+library(rsconnect)
 
-
-# Define UI for application that draws a histogram
 ui <- fluidPage(
-    
-    titlePanel("Forensics Test Check Application"),
-    
-    #Establishes panel to choose between options as well as display what each option does (no instruction)
     navlistPanel(
         "Options",
-        tabPanel("Search", textInput(reactive("sample"), "Enter Sample Number"), textOutput("samplevalue"), tableOutput("searchFrame")), 
-        tabPanel("Check",helpText("Input to check answers"), rHandsontableOutput("Table"), br(), actionButton("check.Btn", "Check"), actionButton("save.Btn", "Save")),
-        tabPanel("View", h3("This table contains all of the answers to all of the sample data that could be tested. If you would like to search for a specific sample, use the search function"), tableOutput("dataFrame"))
-    )
+        tabPanel("File Input", textInput("filein", "Please Enter C:// file name", ""), actionButton("filebtn", "Save File")), 
+        tabPanel("Search", textInput("sample", "Enter Sample Number", ""), textOutput("samplevalue"), tableOutput("searchFrame"), actionButton("searchbtn", "Search")),
+        tabPanel("Check",helpText("Input to check answers"), rHandsontableOutput("table"), actionButton("checkbtn", "Check"), tableOutput("checkFrame"), textOutput("correcttext"), textOutput("incorrecttext"), textOutput("incorrecttext2"), tableOutput("checkFrame2")),
+        tabPanel("View", h3("This table contains all of the answers to all of the sample data that could be tested. If you would like to search for a specific sample, use the search function"), tableOutput("dataFrame"))))
 
-)
+
 server <- function(input, output, session) {
-    #Established the way that shiny should create dataframes between input and output sessions 
-    dataFrame = data.frame(read_excel("C:\\Users\\Anand\\Downloads\\QC Data Actual.xlsx",))
-    output$dataFrame = renderTable(dataFrame)
-    
-   dfuser = data.frame("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17")
-   names(dfuser) = names(dataFrame)
-   output$Table = renderRHandsontable(rhandsontable(dfuser))
-   observeEvent(input$save.Btn, 
-               write.csv(hot_to_r(input$Table), file = "MyData.csv", row.names = FALSE))
+    #View/inputfile
+    observeEvent(input$filebtn, { 
+        dataFrame = data.frame(read_excel(as.character(input$filein)))
+        output$dataFrame = renderTable(dataFrame)
+        #check
+        dfuser = data.frame("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17")
+        names(dfuser) = names(dataFrame)
+        output$table = renderRHandsontable(rhandsontable(dfuser))})
+        
+    #search
+    observeEvent(input$searchbtn, { 
+        usersample1 = input$sample
+        usercheckindices = which(dataFrame["Sample"] == usersample1)
+        dataSubsetcheck = dataFrame[usercheckindices, ]
+        names(dataSubsetcheck) = c(names(dataFrame))
+        output$searchFrame = renderTable(dataSubsetcheck)})
+    #check
+    observeEvent(input$checkbtn, {
+        df = hot_to_r(input$table)
+        usercheckindices2 = which(dataFrame["Sample"] == df[1,1])
+        dataSubsetcheck2 = dataFrame[usercheckindices2, ]
+        names(dataSubsetcheck2) = c(names(dataFrame))
+        if (all(df == dataSubsetcheck2)) {
+            output$correcttext = renderText("Congratulations!!! all of your values are correct")
+        }
+        else {
+            dfincorrect = data.frame(setdiff(df, dataSubsetcheck2))
+            output$incorrecttext = renderText(("These are the incorrect answers: "))
+            output$incorrecttext2 = renderText(names(dfincorrect))
+        }
+    })
 }
 
 # Run the application 
